@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/alingse/refaklet"
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,30 +12,40 @@ type DemoValue struct {
 	B *int
 	C string
 	D []byte
+	E []any
 }
 
-func TestPretty(t *testing.T) {
-	var b int = 100
-	var demoValue = &DemoValue{
+var demoValue *DemoValue
+
+func ptr[T any](v T) *T { return &v }
+
+func init() {
+	demoValue = &DemoValue{
 		A: 1,
-		B: &b,
+		B: ptr(int(100)),
 		C: "hello",
-		D: []byte{1, 2, 3},
+		D: []uint8{1, 2, 3},
+		E: []interface{}{
+			byte(10),
+			int64(11),
+		},
 	}
+}
+func TestPretty(t *testing.T) {
 	v := refaklet.ValueOf(demoValue)
 	body := v.Format()
-	assert.Equal(t, `&refaklet_test.DemoValue{
+	assert.Equal(t,
+		`&refaklet_test.DemoValue{
     A:  1,
-    B:  &int(100),
+    B:  ptr(int(100)),
     C:  "hello",
-    D:  {0x1, 0x2, 0x3},
-}`, body)
+    D:  []uint8{0x1, 0x2, 0x3},
+    E:  []interface {}{
+        uint8(0xa),
+        int64(11),
+    },
+}
 
-	body2 := pretty.Sprint(demoValue)
-	assert.Equal(t, `&refaklet_test.DemoValue{
-    A:  1,
-    B:  &int(100),
-    C:  "hello",
-    D:  {0x1, 0x2, 0x3},
-}`, body2)
+func ptr[T any](v T) *T { return &v }`, body)
+
 }

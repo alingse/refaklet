@@ -17,6 +17,7 @@ import (
 type refakletValue struct {
 	rv    reflect.Value
 	quote bool
+	ptr   bool
 }
 
 func ValueOf(v any) refakletValue {
@@ -29,8 +30,14 @@ func ValueOf(v any) refakletValue {
 func (f refakletValue) Format() string {
 	buf := bytes.NewBuffer(nil)
 	w := tabwriter.NewWriter(buf, 4, 4, 1, ' ', 0)
-	p := &printer{tw: w, Writer: w, visited: make(map[visit]int)}
+	p := &printer{
+		tw:      w,
+		Writer:  w,
+		visited: make(map[visit]int),
+		ref:     &f,
+	}
 	p.printValue(f.rv, true, f.quote)
+	p.printHelper()
 	w.Flush()
 	return buf.String()
 }
@@ -40,6 +47,7 @@ type printer struct {
 	tw      *tabwriter.Writer
 	visited map[visit]int
 	depth   int
+	ref     *refakletValue
 }
 
 func (p *printer) indent() *printer {
@@ -245,8 +253,16 @@ func (p *printer) printValue(v reflect.Value, showType, quote bool) {
 		} else {
 			pp := *p
 			pp.depth++
-			writeByte(pp, '&')
-			pp.printValue(e, true, true)
+
+			if isBasicType(e) {
+				io.WriteString(pp, "ptr(")
+				pp.printValue(e, true, true)
+				writeByte(pp, ')')
+				p.ref.ptr = true
+			} else {
+				writeByte(p, '&')
+				pp.printValue(e, true, true)
+			}
 		}
 	case reflect.Chan:
 		x := v.Pointer()
@@ -264,6 +280,12 @@ func (p *printer) printValue(v reflect.Value, showType, quote bool) {
 		p.printInline(v, v.Pointer(), showType)
 	case reflect.Invalid:
 		io.WriteString(p, "nil")
+	}
+}
+
+func (p *printer) printHelper() {
+	if p.ref.ptr {
+		io.WriteString(p, "\n\nfunc ptr[T any](v T) *T { return &v }")
 	}
 }
 
@@ -304,6 +326,8 @@ func labelType(t reflect.Type) bool {
 	switch t.Kind() {
 	case reflect.Interface, reflect.Struct:
 		return true
+	case reflect.Slice:
+		return true
 	}
 	return false
 }
@@ -325,4 +349,11 @@ func getField(v reflect.Value, i int) reflect.Value {
 		val = val.Elem()
 	}
 	return val
+}
+
+func isBasicType(v reflect.Value) bool {
+	if v.Kind() == reflect.Int {
+		return true
+	}
+	return false
 }
