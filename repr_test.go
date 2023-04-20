@@ -59,7 +59,7 @@ var _ = &DemoValue2{
 		},
 	},
 	E: []*DemoValue{
-		&DemoValue{
+		{
 			A: 1,
 			B: ptr(int(100)),
 			C: "hello",

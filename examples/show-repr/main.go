@@ -1,11 +1,3 @@
-# refaklet
-fake reflect for go
-
-## Repr
-
-show a go var as it self repr type.
-
-```go
 package main
 
 import (
@@ -53,8 +45,3 @@ func main() {
 	repr := v.Repr()
 	fmt.Println(repr == repr_)
 }
-```
-
-## LICENSE
-
-some code copy and modified from https://github.com/kr/pretty with MIT license
