@@ -30,7 +30,7 @@ func TestPretty(t *testing.T) {
     B:  &int(100),
     C:  "hello",
     D:  {0x1, 0x2, 0x3},
-`, body)
+}`, body)
 
 	body2 := pretty.Sprint(demoValue)
 	assert.Equal(t, `&refaklet_test.DemoValue{

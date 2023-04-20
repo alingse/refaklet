@@ -16,7 +16,6 @@ import (
 
 type refakletValue struct {
 	rv    reflect.Value
-	force bool
 	quote bool
 }
 
@@ -32,6 +31,7 @@ func (f refakletValue) Format() string {
 	w := tabwriter.NewWriter(buf, 4, 4, 1, ' ', 0)
 	p := &printer{tw: w, Writer: w, visited: make(map[visit]int)}
 	p.printValue(f.rv, true, f.quote)
+	w.Flush()
 	return buf.String()
 }
 
