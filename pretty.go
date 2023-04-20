@@ -27,9 +27,9 @@ func ValueOf(v any) refakletValue {
 	}
 }
 
-func (f refakletValue) Format() string {
+func (f refakletValue) Repr() string {
 	buf := bytes.NewBuffer(nil)
-	w := tabwriter.NewWriter(buf, 4, 4, 1, ' ', 0)
+	w := tabwriter.NewWriter(buf, 4, 4, 1, '\t', 0)
 	p := &printer{
 		tw:      w,
 		Writer:  w,
@@ -52,7 +52,7 @@ type printer struct {
 
 func (p *printer) indent() *printer {
 	q := *p
-	q.tw = tabwriter.NewWriter(p.Writer, 4, 4, 1, ' ', 0)
+	q.tw = tabwriter.NewWriter(p.Writer, 4, 4, 1, '\t', 0)
 	q.Writer = text.NewIndentWriter(q.tw, []byte{'\t'})
 	return &q
 }
@@ -214,7 +214,7 @@ func (p *printer) printValue(v reflect.Value, showType, quote bool) {
 	case reflect.Array, reflect.Slice:
 		t := v.Type()
 		if showType {
-			io.WriteString(p, t.String())
+			io.WriteString(p, typeString(t))
 		}
 		if v.Kind() == reflect.Slice && v.IsNil() && showType {
 			io.WriteString(p, "(nil)")
@@ -326,7 +326,7 @@ func labelType(t reflect.Type) bool {
 	switch t.Kind() {
 	case reflect.Interface, reflect.Struct:
 		return true
-	case reflect.Slice:
+	case reflect.Slice, reflect.Map:
 		return true
 	}
 	return false
@@ -352,8 +352,29 @@ func getField(v reflect.Value, i int) reflect.Value {
 }
 
 func isBasicType(v reflect.Value) bool {
-	if v.Kind() == reflect.Int {
+	switch v.Kind() {
+	case reflect.Bool, reflect.String,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
 		return true
+	default:
+		return false
 	}
-	return false
+}
+
+func typeString(t reflect.Type) string {
+	s := t.String()
+	switch s {
+	case "uint8":
+		return "byte"
+	case "[]uint8":
+		return "[]byte"
+	case "interface {}":
+		return "any"
+	case "[]interface {}":
+		return "[]any"
+	default:
+		return s
+	}
 }
